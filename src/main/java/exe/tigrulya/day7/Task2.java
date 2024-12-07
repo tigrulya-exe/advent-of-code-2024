@@ -21,7 +21,7 @@ public class Task2 {
     }
 
     public static void main(String[] args) throws IOException {
-        try (var lines = Files.lines(getResource("input/7_2.txt"))) {
+        try (var lines = Files.lines(getResource("input/7.txt"))) {
             long totalSum = lines.map(Equation::parseFrom)
                     .filter(equation -> new EquationSolver(equation).isPossible())
                     .mapToLong(equation -> equation.result)

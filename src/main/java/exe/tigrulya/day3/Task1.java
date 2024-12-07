@@ -16,7 +16,7 @@ public class Task1 {
         PATTERN.matcher("");
 
     public static void main(String[] args) throws IOException {
-        try (var lines = Files.lines(getResource("input/3_1.txt"))) {
+        try (var lines = Files.lines(getResource("input/3.txt"))) {
             long result = lines.flatMap(Task1::getMultiplicationResults)
                 .reduce(0L, Long::sum);
 

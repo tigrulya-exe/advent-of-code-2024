@@ -13,7 +13,7 @@ public class Task1 {
         List<Long> left = new ArrayList<>();
         List<Long> right = new ArrayList<>();
 
-        try (var lines = Files.lines(getResource("input/1_1.txt"))) {
+        try (var lines = Files.lines(getResource("input/1.txt"))) {
             lines.map(line -> line.split("\\s+"))
                     .forEach(numbers -> {
                         left.add(Long.parseLong(numbers[0]));

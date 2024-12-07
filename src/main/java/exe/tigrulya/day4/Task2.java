@@ -7,7 +7,7 @@ import static exe.tigrulya.Utils.getResource;
 
 public class Task2 {
     public static void main(String[] args) throws IOException {
-        try (var lines = Files.lines(getResource("input/4_2.txt"))) {
+        try (var lines = Files.lines(getResource("input/4.txt"))) {
             char[][] field = lines.map(String::toCharArray)
                     .toArray(char[][]::new);
 

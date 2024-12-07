@@ -18,7 +18,7 @@ public class Task1 {
         boolean delimiterHandled = false;
         long result = 0;
 
-        try (var lines = Files.lines(getResource("input/5_1.txt"))) {
+        try (var lines = Files.lines(getResource("input/5.txt"))) {
             Iterable<String> linesIterable = lines::iterator;
             for (var line : linesIterable) {
                 if (line.isBlank()) {

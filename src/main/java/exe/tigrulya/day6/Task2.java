@@ -65,7 +65,7 @@ public class Task2 {
         int guardianY = 0;
 
         List<List<Cell>> map = new ArrayList<>();
-        try (var lines = Files.lines(getResource("input/6_2.txt"))) {
+        try (var lines = Files.lines(getResource("input/6.txt"))) {
             Iterable<String> linesIterable = lines::iterator;
             for (var line : linesIterable) {
                 currentX = 0;

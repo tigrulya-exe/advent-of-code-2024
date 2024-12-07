@@ -30,7 +30,7 @@ public class Task2 {
     private static boolean baseAllowance = true;
 
     public static void main(String[] args) throws IOException {
-        try (var lines = Files.lines(getResource("input/3_2.txt"))) {
+        try (var lines = Files.lines(getResource("input/3.txt"))) {
             long result = lines.flatMap(Task2::getMultiplicationResults)
                 .reduce(0L, Long::sum);
 

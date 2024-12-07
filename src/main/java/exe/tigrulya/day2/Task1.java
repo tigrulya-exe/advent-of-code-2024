@@ -9,7 +9,7 @@ import static exe.tigrulya.Utils.getResource;
 
 public class Task1 {
     public static void main(String[] args) throws IOException {
-        try (var lines = Files.lines(getResource("input/2_1.txt"))) {
+        try (var lines = Files.lines(getResource("input/2.txt"))) {
             long safeReports = lines.map(Task1::parseReport)
                     .filter(Task1::isSafeReport)
                     .count();
