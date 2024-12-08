@@ -3,6 +3,7 @@ package exe.tigrulya.day8;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -11,7 +12,7 @@ import java.util.Set;
 
 import static exe.tigrulya.Utils.getResource;
 
-public class Task1 {
+public class Task2 {
     public static Set<Vector> antinodes = new HashSet<>();
 
     public record Vector(int x, int y) {
@@ -49,6 +50,7 @@ public class Task1 {
         }
 
         long antinodesCount = countAntinodes(antennasByFrequencies, xSize, currentY);
+        print(antennasByFrequencies, xSize, currentY);
 
         System.out.println("Result: " + antinodesCount);
     }
@@ -61,16 +63,45 @@ public class Task1 {
                         continue;
                     }
 
+                    antinodes.add(antennasLocations.get(i));
+
                     Vector antinode = antennasLocations.get(i).antinode(antennasLocations.get(j));
-                    if (antinode.x < xSize && antinode.x >= 0
+                    Vector previousNode = antennasLocations.get(i);
+                    while (antinode.x < xSize && antinode.x >= 0
                             && antinode.y < ySize && antinode.y >= 0) {
                         antinodes.add(antinode);
+                        Vector oldAntinode = antinode;
+                        antinode = antinode.antinode(previousNode);
+                        previousNode = oldAntinode;
                     }
                 }
             }
         }
 
         return antinodes.size();
+    }
+
+    private static void print(Map<Character, List<Vector>> antennasByFrequencies, int xSize, int ySize) {
+        char[][] field = new char[ySize][xSize];
+
+        for (var line : field) {
+            Arrays.fill(line, '.');
+        }
+
+        for (var antinode : antinodes) {
+            field[antinode.y][antinode.x] = '#';
+        }
+
+        for (var antennasLocations : antennasByFrequencies.entrySet()) {
+            for (var antennaLocation : antennasLocations.getValue()) {
+                field[antennaLocation.y][antennaLocation.x] = antennasLocations.getKey();
+            }
+        }
+
+        for (var line : field) {
+            System.out.println(line);
+        }
+        System.out.println();
     }
 }
 
