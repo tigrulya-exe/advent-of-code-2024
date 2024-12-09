@@ -10,9 +10,6 @@ import java.util.Optional;
 import java.util.stream.IntStream;
 
 public class Task2 {
-    public record Block(boolean isFile, int size, Integer id) {
-    }
-
     public static void main(String[] args) throws IOException {
         try (var lines = Files.lines(getResource("input/9.txt"))) {
             long totalSum = lines.map(Task2::decode)
@@ -21,49 +18,6 @@ public class Task2 {
 
             System.out.println("Result: " + totalSum);
         }
-    }
-
-    private static List<Block> decodeBlocks(String encodedString) {
-        boolean isFileSize = true;
-        int id = 0;
-        List<Block> result = new ArrayList<>();
-
-        for (var ch : encodedString.toCharArray()) {
-            int size = Integer.parseInt(String.valueOf(ch));
-            result.add(new Block(isFileSize, size, isFileSize ? id++ : null));
-            isFileSize = !isFileSize;
-        }
-
-        return result;
-    }
-
-    private static long defragmentBlocks(List<Block> decodedBlocks) {
-        int firstFreePosition = 0;
-        int lastFilePosition = decodedBlocks.size() - 1;
-
-        while (firstFreePosition < lastFilePosition) {
-            while (firstFreePosition < decodedBlocks.size()
-                && decodedBlocks.get(firstFreePosition).isFile()) {
-                ++firstFreePosition;
-            }
-
-            while (lastFilePosition >= 0
-                && !decodedBlocks.get(lastFilePosition).isFile()
-                && decodedBlocks.get(lastFilePosition).size <= decodedBlocks.get(firstFreePosition).size) {
-                --lastFilePosition;
-            }
-
-            System.out.println("first: " + firstFreePosition + " last: " + lastFilePosition);
-            if (firstFreePosition >= lastFilePosition) {
-                break;
-            }
-
-            Block tmpFirst = decodedBlocks.get(firstFreePosition);
-            decodedBlocks.set(firstFreePosition, decodedBlocks.get(lastFilePosition));
-            decodedBlocks.set(lastFilePosition, tmpFirst);
-        }
-
-        return 0L;
     }
 
     private static List<Integer> decode(String encodedString) {
@@ -93,8 +47,6 @@ public class Task2 {
 
         int lastFileId = -1;
 
-//        print(decodedFiles);
-
         while (fileBlockIter >= 0) {
             int freeBlockSize = 0;
 
@@ -111,7 +63,9 @@ public class Task2 {
                 --fileBlockIter;
             }
 
-            for (int freeBlockIter = 0; freeBlockIter < fileBlockIter; ++freeBlockIter) {
+            lastFileId = -1;
+
+            for (int freeBlockIter = 0; freeBlockIter <= fileBlockIter; ++freeBlockIter) {
                 if (decodedFiles.get(freeBlockIter) != null) {
                     freeBlockSize = 0;
                     continue;
@@ -128,18 +82,8 @@ public class Task2 {
                 }
             }
 
-//            print(decodedFiles);
             fileBlockSize = 0;
-            lastFileId = -1;
         }
-    }
-
-
-    private static void print(List<Integer> values) {
-        for (var val: values) {
-            System.out.print(val == null ? "." : val + "");
-        }
-        System.out.println();
     }
 
     private static void swapN(List<Integer> values, int i, int j, int num) {
