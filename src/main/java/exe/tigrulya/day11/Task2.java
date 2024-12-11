@@ -30,7 +30,8 @@ public class Task2 {
         Map<Long, Long> stoneCounts = stones.stream()
                 .collect(Collectors.toMap(
                         Function.identity(),
-                        ignore -> 1L
+                        ignore -> 1L,
+                        Long::sum
                 ));
 
         for (int blink = 0; blink < blinks; ++blink) {
