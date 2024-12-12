@@ -8,7 +8,6 @@ import java.util.Comparator;
 import java.util.Deque;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
@@ -169,7 +168,7 @@ public class Task2 {
             if (previousCoord == null
                     || !mainCoordProvider.apply(sideCoord).equals(mainCoordProvider.apply(previousCoord))
                     || Math.abs(secondCoordProvider.apply(previousCoord) - secondCoordProvider.apply(sideCoord)) > 1
-                    || !Objects.equals(previousCoord.direction, sideCoord.direction)) {
+                    || previousCoord.direction != sideCoord.direction) {
                 ++sides;
             }
             previousCoord = sideCoord;
