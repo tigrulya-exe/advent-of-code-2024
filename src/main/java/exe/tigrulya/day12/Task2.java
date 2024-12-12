@@ -3,8 +3,13 @@ package exe.tigrulya.day12;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Deque;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -13,7 +18,7 @@ import java.util.stream.Stream;
 
 import static exe.tigrulya.Utils.getResource;
 
-public class Task1 {
+public class Task2 {
     public record Coordinates(int x, int y) {
         public Coordinates sum(Coordinates other) {
             return new Coordinates(x + other.x, y + other.y);
@@ -34,7 +39,7 @@ public class Task1 {
                     .flatMap(row -> get(row, coordinates.x));
         }
 
-        public List<Coordinates> samePlants(Coordinates coordinates) {
+        public Map<Boolean, List<Coordinates>> samePlants(Coordinates coordinates) {
             Optional<Character> currentPlant = get(coordinates);
             return currentPlant.map(plant -> Stream.of(
                                     new Coordinates(0, 1),
@@ -42,11 +47,10 @@ public class Task1 {
                                     new Coordinates(0, -1),
                                     new Coordinates(-1, 0)
                             ).map(diff -> diff.sum(coordinates))
-                            .filter(nextCoords -> get(nextCoords)
+                            .collect(Collectors.partitioningBy(nextCoords -> get(nextCoords)
                                     .filter(neighbor -> neighbor == plant)
-                                    .isPresent())
-                            .toList())
-                    .orElseGet(List::of);
+                                    .isPresent())))
+                    .orElseGet(Map::of);
         }
 
         private <T> Optional<T> get(List<T> values, int idx) {
@@ -89,25 +93,64 @@ public class Task1 {
         plantsQueue.addFirst(coordinates);
 
         long plantsCount = 0;
-        long fencesCount = 0;
+
+        Map<Integer, Set<Coordinates>> xSides = new HashMap<>();
+        Map<Integer, Set<Coordinates>> ySides = new HashMap<>();
 
         while (!plantsQueue.isEmpty()) {
             var plantCoords = plantsQueue.pollFirst();
             ++plantsCount;
 
-            List<Coordinates> samePlants = field.samePlants(plantCoords);
-            fencesCount += 4 - samePlants.size();
+            Map<Boolean, List<Coordinates>> neighbours = field.samePlants(plantCoords);
+            List<Coordinates> samePlants = Optional.ofNullable(neighbours.get(true))
+                    .orElseGet(List::of);
+
+            Optional.ofNullable(neighbours.get(false))
+                    .orElseGet(List::of)
+                    .forEach(plant -> {
+                        if (plant.x != plantCoords.x && isNewXSide(xSides, plant)) {
+                            xSides.computeIfAbsent(plant.x, ignore -> new HashSet<>())
+                                    .add(plantCoords);
+                        }
+                        if (plant.y != plantCoords.y && isNewYSide(ySides, plant)) {
+                            ySides.computeIfAbsent(plant.y, ignore -> new HashSet<>())
+                                    .add(plant);
+                        }
+                    });
 
             newCoordinates.remove(plantCoords);
             samePlants.stream()
                     .filter(newCoordinates::contains)
                     .forEach(plant -> {
-                        plantsQueue.addLast(plant);
+                        plantsQueue.addFirst(plant);
                         newCoordinates.remove(plant);
                     });
         }
 
-        return plantsCount * fencesCount;
+        String message = "For plants '%s' plantsCount = %d, sides = %d, xSides = %d, ySides = %d".formatted(
+                field.get(coordinates).get(),
+                plantsCount,
+                xSides.size() + ySides.size(),
+                xSides.size(),
+                ySides.size()
+        );
+        System.out.println(message);
+        // xSides.size() + ySides.size() == sides
+        return plantsCount * (xSides.size() + ySides.size());
+    }
+
+    private static boolean isNewXSide(Map<Integer, Set<Coordinates>> alreadySeenCoordinates, Coordinates coordinate) {
+        Set<Coordinates> xSide = alreadySeenCoordinates.getOrDefault(coordinate.x, Set.of());
+        return xSide.isEmpty() || xSide.stream()
+                .anyMatch(oldCoordinate -> oldCoordinate.x == coordinate.x &&
+                        Math.abs(oldCoordinate.y - coordinate.y) > 1);
+    }
+
+    private static boolean isNewYSide(Map<Integer, Set<Coordinates>> alreadySeenCoordinates, Coordinates coordinate) {
+        Set<Coordinates> ySide = alreadySeenCoordinates.getOrDefault(coordinate.y, Set.of());
+        return ySide.isEmpty() || ySide.stream()
+                .anyMatch(oldCoordinate -> oldCoordinate.y == coordinate.y &&
+                        Math.abs(oldCoordinate.x - coordinate.x) > 1);
     }
 }
 
