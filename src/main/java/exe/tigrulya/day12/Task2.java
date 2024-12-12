@@ -4,14 +4,14 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Collection;
+import java.util.Comparator;
 import java.util.Deque;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -22,6 +22,18 @@ public class Task2 {
     public record Coordinates(int x, int y) {
         public Coordinates sum(Coordinates other) {
             return new Coordinates(x + other.x, y + other.y);
+        }
+    }
+
+    public record SideCoordinates(int x, int y, boolean direction) {
+        public Coordinates sum(Coordinates other) {
+            return new Coordinates(x + other.x, y + other.y);
+        }
+
+        public static SideCoordinates from(Coordinates base, Coordinates neighbour) {
+            boolean direction = neighbour.x == base.x && neighbour.y > base.y
+                    || neighbour.y == base.y && neighbour.x > base.x;
+            return new SideCoordinates(neighbour.x, neighbour.y, direction);
         }
     }
 
@@ -39,7 +51,7 @@ public class Task2 {
                     .flatMap(row -> get(row, coordinates.x));
         }
 
-        public Map<Boolean, List<Coordinates>> samePlants(Coordinates coordinates) {
+        public Map<Boolean, List<Coordinates>> neighbours(Coordinates coordinates) {
             Optional<Character> currentPlant = get(coordinates);
             return currentPlant.map(plant -> Stream.of(
                                     new Coordinates(0, 1),
@@ -83,38 +95,36 @@ public class Task2 {
         long areaPrices = 0;
         while (!newCoordinates.isEmpty()) {
             Coordinates nextPlant = newCoordinates.stream().findAny().get();
-            areaPrices += findAreaPrice(field, nextPlant, newCoordinates);
+            areaPrices += findAreaPriceNew(field, nextPlant, newCoordinates);
         }
         return areaPrices;
     }
 
-    private static long findAreaPrice(Field field, Coordinates coordinates, Set<Coordinates> newCoordinates) {
+    private static long findAreaPriceNew(Field field, Coordinates coordinates, Set<Coordinates> newCoordinates) {
         Deque<Coordinates> plantsQueue = new ArrayDeque<>();
         plantsQueue.addFirst(coordinates);
 
         long plantsCount = 0;
 
-        Map<Integer, Set<Coordinates>> xSides = new HashMap<>();
-        Map<Integer, Set<Coordinates>> ySides = new HashMap<>();
+        List<SideCoordinates> xSides = new ArrayList<>();
+        List<SideCoordinates> ySides = new ArrayList<>();
 
         while (!plantsQueue.isEmpty()) {
             var plantCoords = plantsQueue.pollFirst();
             ++plantsCount;
 
-            Map<Boolean, List<Coordinates>> neighbours = field.samePlants(plantCoords);
+            Map<Boolean, List<Coordinates>> neighbours = field.neighbours(plantCoords);
             List<Coordinates> samePlants = Optional.ofNullable(neighbours.get(true))
                     .orElseGet(List::of);
 
             Optional.ofNullable(neighbours.get(false))
                     .orElseGet(List::of)
                     .forEach(plant -> {
-                        if (plant.x != plantCoords.x && isNewXSide(xSides, plant)) {
-                            xSides.computeIfAbsent(plant.x, ignore -> new HashSet<>())
-                                    .add(plantCoords);
+                        if (plant.x != plantCoords.x) {
+                            xSides.add(SideCoordinates.from(plantCoords, plant));
                         }
-                        if (plant.y != plantCoords.y && isNewYSide(ySides, plant)) {
-                            ySides.computeIfAbsent(plant.y, ignore -> new HashSet<>())
-                                    .add(plant);
+                        if (plant.y != plantCoords.y) {
+                            ySides.add(SideCoordinates.from(plantCoords, plant));
                         }
                     });
 
@@ -127,30 +137,45 @@ public class Task2 {
                     });
         }
 
+        long xSidesCount = calculateSides(xSides, SideCoordinates::x, SideCoordinates::y);
+        long ySidesCount = calculateSides(ySides, SideCoordinates::y, SideCoordinates::x);
+
         String message = "For plants '%s' plantsCount = %d, sides = %d, xSides = %d, ySides = %d".formatted(
                 field.get(coordinates).get(),
                 plantsCount,
-                xSides.size() + ySides.size(),
-                xSides.size(),
-                ySides.size()
+                xSidesCount + ySidesCount,
+                xSidesCount,
+                ySidesCount
         );
         System.out.println(message);
-        // xSides.size() + ySides.size() == sides
-        return plantsCount * (xSides.size() + ySides.size());
+
+        return plantsCount * (xSidesCount + ySidesCount);
     }
 
-    private static boolean isNewXSide(Map<Integer, Set<Coordinates>> alreadySeenCoordinates, Coordinates coordinate) {
-        Set<Coordinates> xSide = alreadySeenCoordinates.getOrDefault(coordinate.x, Set.of());
-        return xSide.isEmpty() || xSide.stream()
-                .anyMatch(oldCoordinate -> oldCoordinate.x == coordinate.x &&
-                        Math.abs(oldCoordinate.y - coordinate.y) > 1);
-    }
+    private static long calculateSides(List<SideCoordinates> sideCoordinates,
+                                       Function<SideCoordinates, Integer> mainCoordProvider,
+                                       Function<SideCoordinates, Integer> secondCoordProvider) {
+        Comparator<SideCoordinates> comparator = Comparator.comparingInt(mainCoordProvider::apply)
+                .thenComparing((a, b) -> Boolean.compare(a.direction, b.direction))
+                .thenComparingInt(secondCoordProvider::apply);
 
-    private static boolean isNewYSide(Map<Integer, Set<Coordinates>> alreadySeenCoordinates, Coordinates coordinate) {
-        Set<Coordinates> ySide = alreadySeenCoordinates.getOrDefault(coordinate.y, Set.of());
-        return ySide.isEmpty() || ySide.stream()
-                .anyMatch(oldCoordinate -> oldCoordinate.y == coordinate.y &&
-                        Math.abs(oldCoordinate.x - coordinate.x) > 1);
+        sideCoordinates.sort(comparator);
+
+        long sides = 0;
+
+        SideCoordinates previousCoord = null;
+
+        for (var sideCoord : sideCoordinates) {
+            if (previousCoord == null
+                    || !mainCoordProvider.apply(sideCoord).equals(mainCoordProvider.apply(previousCoord))
+                    || Math.abs(secondCoordProvider.apply(previousCoord) - secondCoordProvider.apply(sideCoord)) > 1
+                    || !Objects.equals(previousCoord.direction, sideCoord.direction)) {
+                ++sides;
+            }
+            previousCoord = sideCoord;
+        }
+
+        return sides;
     }
 }
 
