@@ -85,8 +85,6 @@ public class Task2 {
         boolean delimiterHandled = false;
         long result = 0;
 
-        HashMap<String, Long> memo = new HashMap<>();
-
         try (var lines = Files.lines(getResource("input/19.txt"))) {
             Iterable<String> linesIterable = lines::iterator;
             for (var line : linesIterable) {
@@ -100,7 +98,7 @@ public class Task2 {
                     continue;
                 }
 
-                long combinations = possibleCombinations(memo, line, trie);
+                long combinations = possibleCombinations(new HashMap<>(), line, trie);
                 System.out.println("Possible " + combinations + " for " + line);
                 result += combinations;
             }
