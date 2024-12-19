@@ -2,19 +2,15 @@ package exe.tigrulya.day19;
 
 import java.io.IOException;
 import java.nio.file.Files;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static exe.tigrulya.Utils.getResource;
 
-public class Task1 {
+public class Task2 {
 
     public static class TrieNode {
         protected final Map<Character, TrieNode> children = new HashMap<>();
@@ -45,21 +41,23 @@ public class Task1 {
             super(null);
         }
 
-        public List<Integer> possiblePrefixes(String string) {
-            List<Integer> possiblePrefixes = new ArrayList<>();
+        public Set<String> possiblePrefixes(String string) {
+            Set<String> possiblePrefixes = new HashSet<>();
+            StringBuilder currentPrefix = new StringBuilder();
+
             TrieNode currentNode = this;
-            for (int position = 0; position < string.length(); position++) {
-                currentNode = currentNode.children.get(string.charAt(position));
+            for (var ch: string.toCharArray()) {
+                currentNode = currentNode.children.get(ch);
                 if (currentNode == null) {
                     return possiblePrefixes;
                 }
 
+                currentPrefix.append(ch);
                 if (currentNode.isPossibleEnd) {
-                    possiblePrefixes.add(position + 1);
+                    possiblePrefixes.add(currentPrefix.toString());
                 }
             }
 
-            possiblePrefixes.add(string.length());
             return possiblePrefixes;
         }
 
@@ -84,11 +82,10 @@ public class Task1 {
     public static void main(String[] args) throws IOException {
         Trie trie = new Trie();
 
-        Set<String> towels = new HashSet<>();
-
         boolean delimiterHandled = false;
         long result = 0;
-        long simpleResult = 0;
+
+        HashMap<String, Long> memo = new HashMap<>();
 
         try (var lines = Files.lines(getResource("input/19.txt"))) {
             Iterable<String> linesIterable = lines::iterator;
@@ -100,59 +97,33 @@ public class Task1 {
 
                 if (!delimiterHandled) {
                     trie.add(line.split(", "));
-                    towels = Stream.of(line.split(", ")).collect(Collectors.toSet());
                     continue;
                 }
 
-                if (isPossible(line, 0, trie)) {
-                    ++result;
-                }
-
-                if (simpleIsPossible(line, towels)) {
-                    ++simpleResult;
-                }
+                long combinations = possibleCombinations(memo, line, trie);
+                System.out.println("Possible " + combinations + " for " + line);
+                result += combinations;
             }
 
             System.out.println("Result: " + result);
-            System.out.println("simple Result: " + simpleResult);
         }
     }
 
-    private static boolean simpleIsPossible(String combination, Set<String> towels) {
-        return simpleIsPossible(combination, 0, towels);
-    }
-
-    private static boolean simpleIsPossible(String combination, int idx, Set<String> towels) {
-        if (idx == combination.length()) {
-            return true;
+    private static long possibleCombinations(Map<String, Long> memo, String combination, Trie trie) {
+        if (combination.isEmpty()) {
+            return 1;
+        }
+        if (memo.containsKey(combination)) {
+            return memo.get(combination);
         }
 
-        int j = combination.length();
-        for (; j > idx; --j) {
-            if (towels.contains(combination.substring(idx, j))) {
-                boolean possible = simpleIsPossible(combination, j, towels);
-                if (possible) {
-                    return true;
-                }
-            }
+        long possibleCombinations = 0;
+        for (var prefix : trie.possiblePrefixes(combination)) {
+            possibleCombinations += possibleCombinations(memo, combination.substring(prefix.length()), trie);
         }
 
-        return false;
-    }
-
-
-    private static boolean isPossible(String combination, int idx, Trie trie) {
-        if (idx == combination.length()) {
-            return true;
-        }
-
-        for (var prefixSize: trie.possiblePrefixes(combination.substring(idx))) {
-            if (isPossible(combination, idx + prefixSize, trie)) {
-                return true;
-            }
-        }
-
-        return false;
+        memo.put(combination, possibleCombinations);
+        return possibleCombinations;
     }
 }
 
